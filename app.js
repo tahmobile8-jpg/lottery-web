@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 
 // ⚠️ ປ່ຽນຄ່າດ້ານລຸ່ມນີ້ ໃຫ້ເປັນຄ່າທີ່ກັອບປີ້ມາຈາກ Firebase Console ຂອງທ່ານ
@@ -36,7 +35,7 @@ let currentUser = null;
 let isSignUpMode = false;
 let bills = [];
 let currentWinnersList = [];
-const roomNames = { room1: "ຫ້ອງທີ 1", room2: "ຫ້ອງທີ 2", room3: "ຫ້ອງທີ 3" };
+const roomNames = { room1: "ຫ້ອງທີ 1 90/650", room2: "ຫ້ອງທີ 2 80/600", room3: "ຫ້ອງທີ 3 70/500" };
 
 // ----------------- 🎯 ເຊື່ອມປຸ່ມ HTML ກັບ JAVASCRIPT -----------------
 document.getElementById('btnAuthSubmit').addEventListener('click', handleAuth);
