@@ -2,13 +2,9 @@
 body {
     font-family: 'Phetsarath OT', 'Saysettha OT', sans-serif;
 }
-
-/* ຟັງຊັນເຊື່ອງ Element */
 .hidden {
     display: none !important;
 }
-
-/* ປັບແຕ່ງ Scrollbar ຂອງກ່ອງໃບບິນໃຫ້ເບິ່ງງ່າຍ */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -19,4 +15,18 @@ body {
 ::-webkit-scrollbar-thumb {
     background: #4f46e5;
     border-radius: 10px;
+    
+}
+.room-badge {
+    display: inline-block;
+    white-space: nowrap; /* ປ້ອງກັນບໍ່ໃຫ້ຂໍ້ຄວາມແຕກແຖວ */
+    overflow: visible;   /* ໃຫ້ຂໍ້ຄວາມສະແດງຜົນເຕັມ */
+    padding: 2px 8px;
+}
+.bg-white:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transition: 0.3s;
+}
+#winnerTableBody {
+    font-size: 14px;
 }
