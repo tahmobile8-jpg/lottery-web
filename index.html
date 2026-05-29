@@ -25,6 +25,12 @@
                 <label class="block text-sm font-bold text-gray-700">🔑 ລະຫັດຜ່ານ (Password):</label>
                 <input type="password" id="authPassword" placeholder="******" class="w-full mt-1 p-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-400">
             </div>
+            <div class="flex items-center mb-4">
+    <input type="checkbox" id="authRememberMe" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" checked>
+    <label for="authRememberMe" class="ml-2 text-sm text-gray-600 cursor-pointer select-none">
+        🔐 ຈົດຈຳຂ້ອຍໄວ້ໃນເຄື່ອງນີ້ (Stay logged in)
+    </label>
+</div>
             <button id="btnAuthSubmit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-lg transition shadow">🚀 ເຂົ້າສູ່ລະບົບ</button>
             <div class="text-center pt-2">
                 <button id="btnToggleMode" class="text-xs text-indigo-500 hover:underline">ຍັງບໍ່ມີບັນຊີ? ກົດສະໝັກສະມາຊິກໃໝ່ທີ່ນີ້</button>
@@ -96,7 +102,7 @@
                 <div>
                     <label class="block text-sm font-bold text-gray-700">📍 ເລືອກຫ້ອງຂາຍ:</label>
                     <select id="batchRoom" class="w-full mt-1 p-2 border rounded-md bg-white font-medium text-gray-800 outline-none">
-                        <option value="room1">🚪 ຫ້ອງທີ 1</option><option value="room2">🚪 ຫ້ອງທີ 2</option><option value="room3">🚪 ຫ້ອງທີ 3</option>
+                        <option value="room1">🚪 ຫ້ອງທີ 1 90/650</option><option value="room2">🚪 ຫ້ອງທີ 2 80/600</option><option value="room3">🚪 ຫ້ອງທີ 3 70/500</option>
                     </select>
                 </div>
                 <div class="grid grid-cols-3 gap-2">
@@ -113,6 +119,13 @@
                     <label class="block text-sm font-medium text-gray-600">📝 ວາງຂໍ້ຄວາມຍອດຫວຍ:</label>
                     <textarea id="batchText" rows="5" placeholder="ຕົວຢ່າງ: 04-44-84:20" class="w-full mt-1 p-2 border rounded-md font-mono text-sm"></textarea>
                 </div>
+                <div id="validationLogContainer" class="hidden mt-3 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs">
+    <div class="font-bold flex items-center gap-1 mb-1">
+        ⚠️ ພົບຂໍ້ຄວາມທີ່ແຍກບໍ່ໄດ້ (ລະບົບບໍ່ໄດ້ບັນທຶກ):
+    </div>
+    <ul id="validationLogList" class="list-disc list-inside space-y-1 font-mono">
+        </ul>
+</div>
                 <div class="flex gap-2">
                     <button id="btnSubmit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-md transition shadow">⚡ ບັນທຶກລົງ Cloud Database</button>
                     <button id="btnCancelEdit" class="hidden bg-gray-400 hover:bg-gray-500 text-white font-bold p-3 rounded-md transition">ຍົກເລີກ</button>

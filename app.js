@@ -2,7 +2,6 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-
 // ⚠️ ປ່ຽນຄ່າດ້ານລຸ່ມນີ້ ໃຫ້ເປັນຄ່າທີ່ກັອບປີ້ມາຈາກ Firebase Console ຂອງທ່ານ
 const firebaseConfig = {
     apiKey: "AIzaSyAUDL7NfzCUY8B8ffWJKYE11EAWztmqmxE",
@@ -11,24 +10,12 @@ const firebaseConfig = {
     storageBucket: "tahkmn-68fbd.firebasestorage.app",
     messagingSenderId: "337572833345",
     appId: "1:337572833345:web:47d48b094e62fa43cb7ec0"
-  };;
+};
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-// ---------------------------------------------------------
-// ໃສ່ໂຄ໊ດ "ຈົດຈຳລະຫັດຜ່ານ" ໄວ້ບ່ອນນີ້ເລີຍຄຮັບ:
-// ---------------------------------------------------------
-setPersistence(auth, browserLocalPersistence)
-  .then(() => {
-    console.log("ລະບົບຕັ້ງຄ່າໃຫ້ຈົດຈຳການ Login ໄວ້ແລ້ວ");
-  })
-  .catch((error) => {
-    console.error("ຕັ້ງຄ່າຈົດຈຳບໍ່ໄດ້:", error);
-  });
-// ---------------------------------------------------------
 
 // Global Variables
 let currentUser = null;
@@ -67,12 +54,18 @@ async function handleAuth() {
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value.trim();
     const btn = document.getElementById('btnAuthSubmit');
+    const rememberMe = document.getElementById('authRememberMe').checked; // 🌟 ດຶງຄ່າຈາກປຸ່ມຕິກ
 
     if(!email || !password) { alert('ກະລຸນາກອກອີເມວ ແລະ ລະຫັດຜ່ານ'); return; }
     btn.innerText = "ກຳລັງປະມວນຜົນ...";
     btn.disabled = true;
 
     try {
+        // 🌟 ເຊັກເງື່ອນໄຂວ່າລູກຄ້າຕິກປຸ່ມຈົດຈຳບໍ່
+        // ຖ້າຕິກ ໃຫ້ໃຊ້ local (ຈຳຕະຫຼອດ), ຖ້າບໍ່ຕິກ ໃຫ້ໃຊ້ session (ປິດເວັບແລ້ວລຶບເລີຍ)
+        const persistenceType = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+        await setPersistence(auth, persistenceType);
+
         if (isSignUpMode) {
             await createUserWithEmailAndPassword(auth, email, password);
             alert('🎉 ສະໝັກສະມາຊິກສຳເລັດ!');
@@ -81,7 +74,7 @@ async function handleAuth() {
         }
     } catch (error) {
         alert('❌ ຜິດພາດ: ' + translateError(error.code));
-        btn.innerText = isSignUpMode ? "🚀 ສະໝັກສະມາຊິກ" : "🚀 ເົ້າສູ່ລະບົບ";
+        btn.innerText = isSignUpMode ? "🚀 ສະໝັກສະມາຊິກ" : "🚀 ເຂົ້າສູ່ລະບົບ";
         btn.disabled = false;
     }
 }
@@ -92,7 +85,7 @@ function handleLogout() {
 
 function toggleAuthMode() {
     isSignUpMode = !isSignUpMode;
-    document.getElementById('authTitle').innerText = isSignUpMode ? "📝 ສະໝັກສະມາຊິກໃໝ່" : "🔐 ເົ້າສູ່ລະບົບຫວຍອອນລາຍ";
+    document.getElementById('authTitle').innerText = isSignUpMode ? "📝 ສະໝັກສະມາຊິກໃໝ່" : "🔐 ເຂົ້າສູ່ລະບົບຫວຍອອນລາຍ";
     document.getElementById('authSubtitle').innerText = isSignUpMode ? "ຕັ້ງອີເມວ ແລະ ລະຫັດຜ່ານເພື່ອສ້າງບັນຊີຂອງທ່ານ" : "ກະລຸນາປ້ອນ ບັນຊີ ແລະ ລະຫັດຜ່ານ ເພື່ອຈັດການຂໍ້ມູນ";
     document.getElementById('btnAuthSubmit').innerText = isSignUpMode ? "🚀 ສະໝັກສະມາຊິກ" : "🚀 ເຂົ້າສູ່ລະບົບ";
     document.getElementById('btnToggleMode').innerText = isSignUpMode ? "ມີບັນຊີແລ້ວ? ກົດເຂົ້າສູ່ລະບົບຢູ່ບ່ອນນີ້" : "ຍັງບໍ່ມີບັນຊີ? ກົດສະໝັກສະມາຊິກໃໝ່ທີ່ນີ້";
@@ -107,6 +100,7 @@ function translateError(code) {
 }
 
 // ----------------- ☁️ ລະບົບ DATABASE (Firestore Real-time) -----------------
+// ດຶງຂໍ້ມູນແບບ Real-time ຈາກ Cloud ມາສະແດງຜົນທັນທີທີ່ມີການປ່ຽນແປງ
 function listenToBillsData(uid) {
     const q = query(collection(db, "users", uid, "bills"));
     onSnapshot(q, (snapshot) => {
@@ -118,68 +112,107 @@ function listenToBillsData(uid) {
     });
 }
 
+// ຟັງຊັນຫຼັກໃນການແຍກຂໍ້ຄວາມຍອດຫວຍ ແລະ ບັນທຶກລົງ Cloud
 async function processBatchText() {
     if(!currentUser) return;
-    const rawText = document.getElementById('batchText').value.trim();
-    let customerName = document.getElementById('batchCustomer').value.trim();
-    let commRate = parseFloat(document.getElementById('customerCommission').value);
-    const selectedRoom = document.getElementById('batchRoom').value;
-    const editingId = document.getElementById('editingBillId').value;
     
-    if (!rawText) { alert('ກະລຸນາວາງຂໍ້ຄວາມຍອດຫວຍກ່ອນ'); return; }
-    if (!customerName) customerName = "ລູກຄ້າທົ່ວໄປ";
-    if (isNaN(commRate) || commRate < 0) commRate = 0;
+    const btnSubmit = document.getElementById('btnSubmit');
+    btnSubmit.disabled = true;
+    btnSubmit.innerText = "⏳ ກຳລັງບັນທຶກ...";
 
-    let parsedItems = [];
-    let billTotalAmount = 0;
-    const lines = rawText.split('\n');
-    
-    lines.forEach(line => {
-        line = line.trim(); if (line.length === 0) return;
-        const splitRegex = /([0-9\s\x2a\-\,\;\.\+]+)([\=\:\;]|\bhu\b|\bHu\b|ຫູ|ຮູ|ຮຸູ|ປ່ອງລະ|ປ່ອງ|ຕາລະ|ຕາ)\s*(\d+)/i;
-        const match = line.match(splitRegex);
+    try {
+        const rawText = document.getElementById('batchText').value.trim();
+        let customerName = document.getElementById('batchCustomer').value.trim();
+        let commRate = parseFloat(document.getElementById('customerCommission').value);
+        const selectedRoom = document.getElementById('batchRoom').value;
+        const editingId = document.getElementById('editingBillId').value;
+        
+        if (!rawText) { alert('ກະລຸນາວາງຂໍ້ຄວາມຍອດຫວຍກ່ອນ'); return; }
+        if (!customerName) customerName = "ລູກຄ້າທົ່ວໄປ";
+        if (isNaN(commRate) || commRate < 0) commRate = 0;
 
-        if (match) {
-            const rawNumbersPart = match[1].trim(); 
-            let moneyAmount = parseFloat(match[3]); 
-            if (moneyAmount < 5000) moneyAmount = moneyAmount * 1000; 
+        // 🌟 ສ້າງວັນທີປັດຈຸບັນເປັນ ຟໍແມັດ DD-MM-YYYY ເພື່ອແຍກງວດໃນແຕ່ລະມື້
+        const today = new Date();
+        const drawDate = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
 
-            const lotteryList = rawNumbersPart.split(/[\s\x2a\-\,\;\.\+]+/);
-            lotteryList.forEach(lotteryNum => {
-                let trimmedNum = lotteryNum.trim();
-                if (trimmedNum.length > 0 && !isNaN(trimmedNum)) {
-                    parsedItems.push({ number: trimmedNum, type: trimmedNum.length >= 3 ? "3 ຕົວ" : "2 ຕົວ", amount: moneyAmount });
-                    billTotalAmount += moneyAmount;
-                }
-            });
+        let parsedItems = [];
+        let billTotalAmount = 0;
+        let unparsedLines = []; 
+        
+        const lines = rawText.split('\n');
+        lines.forEach(line => {
+            let trimmedLine = line.trim(); 
+            if (trimmedLine.length === 0) return;
+
+            const splitRegex = /([0-9\s\x2a\-\,\;\.\+]+)([\=\:\;]|\bhu\b|\bHu\b|ຫູ|ฮู|ฮุู|ປ່ອງລະ|ປ່ອງ|ຕາລະ|ຕາ)\s*(\d+)/i;
+            const match = trimmedLine.match(splitRegex);
+
+            if (match) {
+                const rawNumbersPart = match[1].trim(); 
+                let moneyAmount = parseFloat(match[3]); 
+                if (moneyAmount < 5000) moneyAmount = moneyAmount * 1000; 
+
+                const lotteryList = rawNumbersPart.split(/[\s\x2a\-\,\;\.\+]+/);
+                lotteryList.forEach(lotteryNum => {
+                    let trimmedNum = lotteryNum.trim();
+                    if (trimmedNum.length > 0 && !isNaN(trimmedNum)) {
+                        let typeLabel = trimmedNum.length === 3 ? "3 ຕົວ" : "2 ຕົວ";
+                        parsedItems.push({ number: trimmedNum, type: typeLabel, amount: moneyAmount });
+                        billTotalAmount += moneyAmount;
+                    }
+                });
+            } else {
+                unparsedLines.push(trimmedLine);
+            }
+        });
+
+        if (parsedItems.length === 0) { 
+            alert('❌ ບໍ່ສາມາດແຍກຂໍ້ມູນໄດ້ຈັກແຖວເລີຍ!'); 
+            return; 
         }
-    });
 
-    if (parsedItems.length === 0) { alert('❌ ບໍ່ສາມາດແຍກຂໍ້ມູນໄດ້. ກະລຸນາກວດສອບຮູບແບບຂໍ້ຄວາມ'); return; }
+        let targetId = editingId ? editingId : "bill_" + Date.now();
+        let finalItems = parsedItems;
+        let finalRawText = rawText;
 
-    let targetId = editingId ? editingId : "bill_" + Date.now();
-    let finalItems = parsedItems;
-    let finalRawText = rawText;
-
-    if (!editingId) {
-        const existing = bills.find(b => b.customer.toLowerCase() === customerName.toLowerCase() && b.room === selectedRoom);
-        if(existing) {
-            targetId = existing.id;
-            finalItems = [...existing.items, ...parsedItems];
-            billTotalAmount += existing.totalAmount;
-            finalRawText = existing.rawText + "\n" + rawText;
+        // 🌟 ປ່ຽນບ່ອນນີ້: ຈະລວມບິນກໍຕໍ່ເມື່ອເປັນ "ລູກຄ້າຄົນເກົ່າ, ຫ້ອງເກົ່າ ແລະ ຕ້ອງແມ່ນງວດຂອງມື້ນີ້ເທົ່ານັ້ນ"
+        if (!editingId) {
+            const existing = bills.find(b => b.customer.toLowerCase() === customerName.toLowerCase() && b.room === selectedRoom && b.drawDate === drawDate);
+            if(existing) {
+                targetId = existing.id;
+                finalItems = [...existing.items, ...parsedItems];
+                billTotalAmount += existing.totalAmount;
+                finalRawText = existing.rawText + "\n" + rawText;
+            }
         }
+
+        let billProfit = billTotalAmount * (commRate / 100);
+
+        // ບັນທຶກລົງ Cloud
+        await setDoc(doc(db, "users", currentUser.uid, "bills", targetId), {
+            id: targetId, 
+            customer: customerName, 
+            pct: commRate, 
+            room: selectedRoom,
+            rawText: finalRawText, 
+            items: finalItems, 
+            totalAmount: billTotalAmount, 
+            profit: billProfit,
+            drawDate: drawDate,    // 🌟 ເກັບຊື່ອງວດວັນທີ
+            createdAt: Date.now()  // 🌟 ເກັບເວລາເລີ່ມຕົ້ນ (ເອົາໄວ້ໄລ່ອາຍຸ 7 ມື້)
+        });
+
+        if (editingId) cancelEdit();
+        if (unparsedLines.length === 0) {
+            document.getElementById('batchText').value = '';
+        }
+    } catch (error) {
+        console.error("Error saving bill:", error);
+        alert("❌ ເກີດຂໍ້ຜິດພາດ");
+    } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.innerText = editingId ? "💾 ບັນທຶກການແກ້ໄຂບິນ" : "⚡ ບັນທຶກລົງ Cloud Database";
     }
-
-    let billProfit = billTotalAmount * (commRate / 100);
-
-    await setDoc(doc(db, "users", currentUser.uid, "bills", targetId), {
-        id: targetId, customer: customerName, pct: commRate, room: selectedRoom,
-        rawText: finalRawText, items: finalItems, totalAmount: billTotalAmount, profit: billProfit
-    });
-
-    if (editingId) cancelEdit();
-    document.getElementById('batchText').value = '';
 }
 
 async function deleteBill(id) {
@@ -204,14 +237,40 @@ async function clearData() {
 function renderBillCards() {
     const container = document.getElementById('billCardsContainer');
     container.innerHTML = '';
-    document.getElementById('ticketCount').innerText = `🧾 ໃບບິນຫວຍງວດນີ້ (ລວມ: ${bills.length} ບຸກຄົນ)`;
+    document.getElementById('ticketCount').innerText = `🧾 ໃບບິນຫວຍທັງໝົດ (ລວມ: ${bills.length} ບິນ)`;
 
     if(bills.length === 0) {
-        container.innerHTML = `<div class="col-span-full py-12 text-center text-gray-500 font-medium">✨ ບໍ່ທັນມີຂໍ້ມູນໃບບິນຫວຍເທິງ Cloud. ກະລຸນາຄີຂໍ້ມູນດ້ານເທິງ!</div>`;
+        container.innerHTML = `<div class="col-span-full py-12 text-center text-gray-500 font-medium">✨ ບໍ່ທັນມີຂໍ້ມູນໃບບິນຫວຍເທິງ Cloud.</div>`;
         return;
     }
 
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000; // 7 ມື້ (7 ງວດ)
+    const now = Date.now();
+
+    // 🌟 ສັ່ງລຽງລຳດັບບິນ: ເອົາບິນໃໝ່ສຸດ (ງວດລ້າສຸດ) ຂຶ້ນກ່ອນ
+    bills.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
     bills.forEach((bill) => {
+        const createdAt = bill.createdAt || now;
+        const expiryTime = createdAt + SEVEN_DAYS_MS;
+        const timeLeft = expiryTime - now;
+
+        // 🚨 ຖ້າກາຍ 7 ມື້ (7 ງວດ) ແລ້ວ ໃຫ້ລະບົບລຶບອອກຈາກ Cloud ທັນທີ
+        if (timeLeft <= 0) {
+            deleteDoc(doc(db, "users", currentUser.uid, "bills", bill.id));
+            return; 
+        }
+
+        // ⏳ ຄິດໄລ່ເວລານັບຖອຍຫຼັງ (ຄູດາວ)
+        const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+        const hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minsLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        
+        let countdownText = `⏳ ຄູດາວລຶບອັດຕະໂນມັດ: ອີກ ${daysLeft} ມື້ ${hoursLeft} ຊົ່ວໂມງ`;
+        if (daysLeft === 0) {
+            countdownText = `⚠️ ⚠️ ຈະລຶບອັດຕະໂນມັດໃນອີກ: ${hoursLeft} ຊົ່ວໂມງ ${minsLeft} ນາທີ`;
+        }
+
         let netAmount = bill.totalAmount - bill.profit;
         const card = document.createElement('div');
         card.className = "bg-white rounded-xl shadow-lg p-4 border border-gray-200 flex flex-col justify-between relative overflow-hidden";
@@ -226,6 +285,16 @@ function renderBillCards() {
 
         card.innerHTML = `
             <div>
+                <div class="mb-3 p-2 bg-slate-900 text-white rounded-lg flex flex-col gap-1">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span>📅 ງວດວັນທີ: ${bill.drawDate || 'ບໍ່ລະບຸ'}</span>
+                        <span class="text-amber-400">ປະຫວັດຍ້ອນຫຼັງ</span>
+                    </div>
+                    <div class="text-[10px] text-amber-300 font-mono border-t border-slate-700 pt-1">
+                        ${countdownText}
+                    </div>
+                </div>
+
                 <div class="flex justify-between items-start border-b pb-2 mb-3">
                     <div>
                         <h4 class="font-bold text-base text-gray-900">👤 ${bill.customer}</h4>
@@ -251,7 +320,6 @@ function renderBillCards() {
         container.appendChild(card);
     });
 
-    // ຈັບ Event ໃຫ້ປຸ່ມຕ່າງໆໃນກາດບິນຫວຍ
     document.querySelectorAll('.btn-copy').forEach(b => b.addEventListener('click', (e) => copySingleBill(e.target.dataset.id)));
     document.querySelectorAll('.btn-edit').forEach(b => b.addEventListener('click', (e) => editBill(e.target.dataset.id)));
     document.querySelectorAll('.btn-delete').forEach(b => b.addEventListener('click', (e) => deleteBill(e.target.dataset.id)));
@@ -292,46 +360,99 @@ function editBill(id) {
 }
 
 function cancelEdit() {
-    document.getElementById('editingBillId').value = ""; document.getElementById('batchCustomer').value = ""; document.getElementById('batchText').value = "";
+    document.getElementById('editingBillId').value = ""; 
+    document.getElementById('batchCustomer').value = ""; 
+    document.getElementById('batchText').value = "";
     document.getElementById('formTitle').innerText = "📝 ຄີຂໍ້ມູນຫວຍ";
     document.getElementById('btnSubmit').innerText = "⚡ ບັນທຶກລົງ Cloud Database";
-    document.getElementById('btnCancelEdit').classList.add('hidden'); document.getElementById('editModeBadge').classList.add('hidden');
+    document.getElementById('btnCancelEdit').classList.add('hidden'); 
+    document.getElementById('editModeBadge').classList.add('hidden');
+    
+    // ເຊື່ອງປ່ອງເຕືອນ Validation Log
+    document.getElementById('validationLogContainer').classList.add('hidden');
 }
 
+// ຟັງຊັນກວດລາງວັນອັດສະລິຍະ ຄວບຄຸມທັງ 2 ຕົວ ແລະ 3 ຕົວ
 function searchWinners() {
     const winNum = document.getElementById('winningNumberInput').value.trim();
     const tbody = document.getElementById('winnerTableBody');
+    
     if (!winNum) {
         tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-400 bg-amber-50/50">ກະລຸນາກອກເລກລາງວັນເພື່ອຄົ້ນຫາ</td></tr>`;
-        document.getElementById('winnerCountLabel').innerText = "0 ລາຍການ"; document.getElementById('winnerTotalPayoutLabel').innerText = "0 ກີບ";
-        currentWinnersList = []; return;
+        document.getElementById('winnerCountLabel').innerText = "0 ລາຍການ"; 
+        document.getElementById('winnerTotalPayoutLabel').innerText = "0 ກີບ";
+        currentWinnersList = []; 
+        return;
     }
 
-    currentWinnersList = []; let totalPayout = 0;
+    currentWinnersList = []; 
+    let totalPayout = 0;
+
+    // ກຽມເລກ 2 ຕົວທ້າຍ (ກໍລະນີຜູ້ນຳໃຊ້ປ້ອນເລກ 3 ຕົວມາ)
+    let winNum2Digits = "";
+    if (winNum.length === 3) {
+        winNum2Digits = winNum.substring(1); 
+    }
+
     bills.forEach(bill => {
         bill.items.forEach(item => {
+            let isWin = false;
+            let currentRate = 0;
+
+            // ເຊັກຖືກເລກ 3 ຕົວຕົ້ນສະບັບກົງໆ
             if (item.number === winNum) {
-                let rate = 0;
-                if (bill.room === "room1") rate = item.type === "3 ຕົວ" ? 650 : 90;
-                else if (bill.room === "room2") rate = item.type === "3 ຕົວ" ? 600 : 80;
-                else if (bill.room === "room3") rate = item.type === "3 ຕົວ" ? 500 : 70;
-                let payout = item.amount * rate; totalPayout += payout;
-                currentWinnersList.push({ customer: bill.customer, number: item.number, type: item.type, room: bill.room, payoutAmount: payout });
+                isWin = true;
+                if (bill.room === "room1") currentRate = (item.type === "3 ຕົວ") ? 650 : 90;
+                else if (bill.room === "room2") currentRate = (item.type === "3 ຕົວ") ? 600 : 80;
+                else if (bill.room === "room3") currentRate = (item.type === "3 ຕົວ") ? 500 : 70;
+            } 
+            // ເຊັກຖືກເລກ 2 ຕົວທ້າຍ (ຄົນຊື້ເລກ 2 ຕົວ ແລ້ວໄປກົງກັບ 2 ຕົວທ້າຍຂອງເລກລາງວັນ 3 ຕົວ)
+            else if (winNum2Digits && item.number === winNum2Digits && item.type === "2 ຕົວ") {
+                isWin = true;
+                if (bill.room === "room1") currentRate = 90;
+                else if (bill.room === "room2") currentRate = 80;
+                else if (bill.room === "room3") currentRate = 70;
+            }
+
+            if (isWin) {
+                let payout = item.amount * currentRate; 
+                totalPayout += payout;
+                currentWinnersList.push({ 
+                    customer: bill.customer, 
+                    number: item.number, 
+                    type: item.type, 
+                    room: bill.room, 
+                    payoutAmount: payout 
+                });
             }
         });
     });
 
     tbody.innerHTML = '';
     if (currentWinnersList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 font-medium bg-white">❌ ງວດນີ້ບໍ່ມີໃຜຖືກເລກ ${winNum}</td></tr>`;
-        document.getElementById('winnerCountLabel').innerText = "0 ລາຍການ"; document.getElementById('winnerTotalPayoutLabel').innerText = "0 ກີບ"; return;
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-gray-500 font-medium bg-white">❌ ງວດນີ້ບໍ່ມີໃຜຖືກເລກ ${winNum} ${winNum2Digits ? 'ຫຼື ' + winNum2Digits : ''}</td></tr>`;
+        document.getElementById('winnerCountLabel').innerText = "0 ລາຍການ"; 
+        document.getElementById('winnerTotalPayoutLabel').innerText = "0 ກີບ"; 
+        return;
     }
 
     currentWinnersList.forEach(w => {
-        const tr = document.createElement('tr'); tr.className = "bg-white text-gray-700";
-        tr.innerHTML = `<td class="p-2 font-bold">${w.customer}</td><td class="p-2 text-indigo-600 font-bold">${w.number}</td><td class="p-2"><span class="px-1.5 py-0.5 text-[10px] font-bold rounded ${w.type === '3 ຕົວ' ? 'bg-purple-100 text-purple-700':'bg-blue-100 text-blue-700'}">${w.type}</span></td><td class="p-2 text-xs">${roomNames[w.room]}</td><td class="p-2 font-bold text-red-600">+${w.payoutAmount.toLocaleString()}</td>`;
+        const tr = document.createElement('tr'); 
+        tr.className = "bg-white text-gray-700 border-b border-slate-100 hover:bg-slate-50 transition";
+        tr.innerHTML = `
+            <td class="p-3 font-bold text-gray-900">${w.customer}</td>
+            <td class="p-3 text-indigo-600 font-bold text-base">${w.number}</td>
+            <td class="p-3">
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${w.type === '3 ຕົວ' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}">
+                    ${w.type}
+                </span>
+            </td>
+            <td class="p-3 text-xs text-gray-500">${roomNames[w.room]}</td>
+            <td class="p-3 font-bold text-emerald-600 text-right">+${w.payoutAmount.toLocaleString()}</td>
+        `;
         tbody.appendChild(tr);
     });
+    
     document.getElementById('winnerCountLabel').innerText = `${currentWinnersList.length} ລາຍການ`;
     document.getElementById('winnerTotalPayoutLabel').innerText = totalPayout.toLocaleString() + " ກີບ";
 }
@@ -364,6 +485,6 @@ function copyWinnersToClipboard() {
     let textOutput = `🎉 ລາຍຊື່ຜູ້ຖືກເລກ [ ${winNum} ] \n-------------------------\n`;
     currentWinnersList.forEach((w, index) => { textOutput += `${index+1}. ລູກຄ້າ: ${w.customer} ➔ ເລກ: ${w.number}, ໄດ້ຮັບ: +${w.payoutAmount.toLocaleString()} ກີບ\n`; });
     let totalPayout = currentWinnersList.reduce((sum, t) => sum + t.payoutAmount, 0);
-    textOutput += `-------------------------\n💵 ລວມຍອດເງິນລາງວັນ: ${totalPayout.toLocaleString()} ກີບ`;
+    textOutput += `-------------------------\n💵 ลวมยอดเงินรางวัล: ${totalPayout.toLocaleString()} กีบ`;
     navigator.clipboard.writeText(textOutput).then(() => { alert('📋 ຄັດລອກລາຍຊື່ຄົນຖືກເລກແລ້ວ!'); });
 }
