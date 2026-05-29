@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, query, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // ⚠️ ປ່ຽນຄ່າດ້ານລຸ່ມນີ້ ໃຫ້ເປັນຄ່າທີ່ກັອບປີ້ມາຈາກ Firebase Console ຂອງທ່ານ
@@ -19,14 +19,12 @@ const db = getFirestore(app);
 
 // Global Variables
 let currentUser = null;
-let isSignUpMode = false;
 let bills = [];
 let currentWinnersList = [];
 const roomNames = { room1: "ຫ້ອງທີ 1 90/650", room2: "ຫ້ອງທີ 2 80/600", room3: "ຫ້ອງທີ 3 70/500" };
 
 // ----------------- 🎯 ເຊື່ອມປຸ່ມ HTML ກັບ JAVASCRIPT -----------------
 document.getElementById('btnAuthSubmit').addEventListener('click', handleAuth);
-document.getElementById('btnToggleMode').addEventListener('click', toggleAuthMode);
 document.getElementById('btnLogout').addEventListener('click', handleLogout);
 document.getElementById('btnSubmit').addEventListener('click', processBatchText);
 document.getElementById('btnCancelEdit').addEventListener('click', cancelEdit);
@@ -35,7 +33,7 @@ document.getElementById('btnCopyAll').addEventListener('click', copyToClipboard)
 document.getElementById('btnCopyWinners').addEventListener('click', copyWinnersToClipboard);
 document.getElementById('winningNumberInput').addEventListener('input', searchWinners);
 
-// ----------------- 🔐 ລະບົບ AUTH (Login/Logout) -----------------
+// ----------------- 🔐 ລະບົບ AUTH (Login/Logout Only) -----------------
 onAuthStateChanged(auth, (user) => {
     if (user) {
         currentUser = user;
@@ -54,27 +52,23 @@ async function handleAuth() {
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value.trim();
     const btn = document.getElementById('btnAuthSubmit');
-    const rememberMe = document.getElementById('authRememberMe').checked; // 🌟 ດຶງຄ່າຈາກປຸ່ມຕິກ
+    const rememberMeEl = document.getElementById('authRememberMe');
+    const rememberMe = rememberMeEl ? rememberMeEl.checked : true;
 
     if(!email || !password) { alert('ກະລຸນາກອກອີເມວ ແລະ ລະຫັດຜ່ານ'); return; }
-    btn.innerText = "ກຳລັງປະມວນຜົນ...";
+    btn.innerText = "ກຳລັງກວດສອບ...";
     btn.disabled = true;
 
     try {
-        // 🌟 ເຊັກເງື່ອນໄຂວ່າລູກຄ້າຕິກປຸ່ມຈົດຈຳບໍ່
-        // ຖ້າຕິກ ໃຫ້ໃຊ້ local (ຈຳຕະຫຼອດ), ຖ້າບໍ່ຕິກ ໃຫ້ໃຊ້ session (ປິດເວັບແລ້ວລຶບເລີຍ)
+        // ຕັ້ງຄ່າການຈົດຈຳ User ຕາມປຸ່ມຕິກ
         const persistenceType = rememberMe ? browserLocalPersistence : browserSessionPersistence;
         await setPersistence(auth, persistenceType);
 
-        if (isSignUpMode) {
-            await createUserWithEmailAndPassword(auth, email, password);
-            alert('🎉 ສະໝັກສະມາຊິກສຳເລັດ!');
-        } else {
-            await signInWithEmailAndPassword(auth, email, password);
-        }
+        // 🔐 ສັ່ງເຂົ້າສູ່ລະບົບຢ່າງດຽວ (ປິດລະບົບສະໝັກສະມາຊິກຖາວອນ)
+        await signInWithEmailAndPassword(auth, email, password);
     } catch (error) {
         alert('❌ ຜິດພາດ: ' + translateError(error.code));
-        btn.innerText = isSignUpMode ? "🚀 ສະໝັກສະມາຊິກ" : "🚀 ເຂົ້າສູ່ລະບົບ";
+        btn.innerText = "🚀 ເົ້າສູ່ລະບົບ";
         btn.disabled = false;
     }
 }
@@ -83,24 +77,13 @@ function handleLogout() {
     if(confirm('ທ່ານຕ້ອງການອອກຈາກລະບົບແທ້ບໍ່?')) { signOut(auth); }
 }
 
-function toggleAuthMode() {
-    isSignUpMode = !isSignUpMode;
-    document.getElementById('authTitle').innerText = isSignUpMode ? "📝 ສະໝັກສະມາຊິກໃໝ່" : "🔐 ເຂົ້າສູ່ລະບົບຫວຍອອນລາຍ";
-    document.getElementById('authSubtitle').innerText = isSignUpMode ? "ຕັ້ງອີເມວ ແລະ ລະຫັດຜ່ານເພື່ອສ້າງບັນຊີຂອງທ່ານ" : "ກະລຸນາປ້ອນ ບັນຊີ ແລະ ລະຫັດຜ່ານ ເພື່ອຈັດການຂໍ້ມູນ";
-    document.getElementById('btnAuthSubmit').innerText = isSignUpMode ? "🚀 ສະໝັກສະມາຊິກ" : "🚀 ເຂົ້າສູ່ລະບົບ";
-    document.getElementById('btnToggleMode').innerText = isSignUpMode ? "ມີບັນຊີແລ້ວ? ກົດເຂົ້າສູ່ລະບົບຢູ່ບ່ອນນີ້" : "ຍັງບໍ່ມີບັນຊີ? ກົດສະໝັກສະມາຊິກໃໝ່ທີ່ນີ້";
-}
-
 function translateError(code) {
-    if(code === 'auth/wrong-password') return 'ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ';
+    if(code === 'auth/wrong-password' || code === 'auth/invalid-credential') return 'ລະຫັດຜ່ານ ຫຼື ບັນຊີບໍ່ຖືກຕ້ອງ';
     if(code === 'auth/user-not-found') return 'ບໍ່ພົບອີເມວນີ້ໃນລະບົບ';
-    if(code === 'auth/email-already-in-use') return 'ອີເມວນີ້ຖືກໃຊ້ສະໝັກໄປແລ້ວ';
-    if(code === 'auth/weak-password') return 'ລະຫັດຜ່ານຕ້ອງມີ 6 ຕົວຂຶ້ນໄປ';
     return code;
 }
 
 // ----------------- ☁️ ລະບົບ DATABASE (Firestore Real-time) -----------------
-// ດຶງຂໍ້ມູນແບບ Real-time ຈາກ Cloud ມາສະແດງຜົນທັນທີທີ່ມີການປ່ຽນແປງ
 function listenToBillsData(uid) {
     const q = query(collection(db, "users", uid, "bills"));
     onSnapshot(q, (snapshot) => {
@@ -112,7 +95,6 @@ function listenToBillsData(uid) {
     });
 }
 
-// ຟັງຊັນຫຼັກໃນການແຍກຂໍ້ຄວາມຍອດຫວຍ ແລະ ບັນທຶກລົງ Cloud
 async function processBatchText() {
     if(!currentUser) return;
     
@@ -131,7 +113,6 @@ async function processBatchText() {
         if (!customerName) customerName = "ລູກຄ້າທົ່ວໄປ";
         if (isNaN(commRate) || commRate < 0) commRate = 0;
 
-        // 🌟 ສ້າງວັນທີປັດຈຸບັນເປັນ ຟໍແມັດ DD-MM-YYYY ເພື່ອແຍກງວດໃນແຕ່ລະມື້
         const today = new Date();
         const drawDate = `${String(today.getDate()).padStart(2, '0')}-${String(today.getMonth() + 1).padStart(2, '0')}-${today.getFullYear()}`;
 
@@ -175,7 +156,6 @@ async function processBatchText() {
         let finalItems = parsedItems;
         let finalRawText = rawText;
 
-        // 🌟 ປ່ຽນບ່ອນນີ້: ຈະລວມບິນກໍຕໍ່ເມື່ອເປັນ "ລູກຄ້າຄົນເກົ່າ, ຫ້ອງເກົ່າ ແລະ ຕ້ອງແມ່ນງວດຂອງມື້ນີ້ເທົ່ານັ້ນ"
         if (!editingId) {
             const existing = bills.find(b => b.customer.toLowerCase() === customerName.toLowerCase() && b.room === selectedRoom && b.drawDate === drawDate);
             if(existing) {
@@ -188,7 +168,6 @@ async function processBatchText() {
 
         let billProfit = billTotalAmount * (commRate / 100);
 
-        // ບັນທຶກລົງ Cloud
         await setDoc(doc(db, "users", currentUser.uid, "bills", targetId), {
             id: targetId, 
             customer: customerName, 
@@ -198,8 +177,8 @@ async function processBatchText() {
             items: finalItems, 
             totalAmount: billTotalAmount, 
             profit: billProfit,
-            drawDate: drawDate,    // 🌟 ເກັບຊື່ອງວດວັນທີ
-            createdAt: Date.now()  // 🌟 ເກັບເວລາເລີ່ມຕົ້ນ (ເອົາໄວ້ໄລ່ອາຍຸ 7 ມື້)
+            drawDate: drawDate,
+            createdAt: Date.now()
         });
 
         if (editingId) cancelEdit();
@@ -224,7 +203,7 @@ async function deleteBill(id) {
 
 async function clearData() {
     if(!currentUser) return;
-    if(confirm('🚨 ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລ້າງຂໍ້ມູນທັງໝົດໃນ Cloud ເພື່ອຂຶ້ນງວດໃໝ່?')) {
+    if(confirm('🚨 ທ່ານແນ່ໃຈບໍ່ວ່າต้องการລ້າງຂໍ້ມູນທັງໝົດໃນ Cloud ເພື່ອຂຶ້ນງວດໃໝ່?')) {
         const batch = writeBatch(db);
         bills.forEach(b => { batch.delete(doc(db, "users", currentUser.uid, "bills", b.id)); });
         await batch.commit();
@@ -244,10 +223,9 @@ function renderBillCards() {
         return;
     }
 
-    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000; // 7 ມື້ (7 ງວດ)
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
     const now = Date.now();
 
-    // 🌟 ສັ່ງລຽງລຳດັບບິນ: ເອົາບິນໃໝ່ສຸດ (ງວດລ້າສຸດ) ຂຶ້ນກ່ອນ
     bills.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
     bills.forEach((bill) => {
@@ -255,20 +233,18 @@ function renderBillCards() {
         const expiryTime = createdAt + SEVEN_DAYS_MS;
         const timeLeft = expiryTime - now;
 
-        // 🚨 ຖ້າກາຍ 7 ມື້ (7 ງວດ) ແລ້ວ ໃຫ້ລະບົບລຶບອອກຈາກ Cloud ທັນທີ
         if (timeLeft <= 0) {
             deleteDoc(doc(db, "users", currentUser.uid, "bills", bill.id));
             return; 
         }
 
-        // ⏳ ຄິດໄລ່ເວລານັບຖອຍຫຼັງ (ຄູດາວ)
         const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
         const hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minsLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
         
         let countdownText = `⏳ ຄູດາວລຶບອັດຕະໂນມັດ: ອີກ ${daysLeft} ມື້ ${hoursLeft} ຊົ່ວໂມງ`;
         if (daysLeft === 0) {
-            countdownText = `⚠️ ⚠️ ຈະລຶບອັດຕະໂນມັດໃນອີກ: ${hoursLeft} ຊົ່ວໂມງ ${minsLeft} ນາທີ`;
+            countdownText = `⚠️ ⚠️ ຈະລຶບອັດຕະໂນມັດໃນອີກ: ${hoursLeft} ຊົ່ວໂມງ ${minsLeft} นາທີ`;
         }
 
         let netAmount = bill.totalAmount - bill.profit;
@@ -367,12 +343,9 @@ function cancelEdit() {
     document.getElementById('btnSubmit').innerText = "⚡ ບັນທຶກລົງ Cloud Database";
     document.getElementById('btnCancelEdit').classList.add('hidden'); 
     document.getElementById('editModeBadge').classList.add('hidden');
-    
-    // ເຊື່ອງປ່ອງເຕືອນ Validation Log
     document.getElementById('validationLogContainer').classList.add('hidden');
 }
 
-// ຟັງຊັນກວດລາງວັນອັດສະລິຍະ ຄວບຄຸມທັງ 2 ຕົວ ແລະ 3 ຕົວ
 function searchWinners() {
     const winNum = document.getElementById('winningNumberInput').value.trim();
     const tbody = document.getElementById('winnerTableBody');
@@ -388,7 +361,6 @@ function searchWinners() {
     currentWinnersList = []; 
     let totalPayout = 0;
 
-    // ກຽມເລກ 2 ຕົວທ້າຍ (ກໍລະນີຜູ້ນຳໃຊ້ປ້ອນເລກ 3 ຕົວມາ)
     let winNum2Digits = "";
     if (winNum.length === 3) {
         winNum2Digits = winNum.substring(1); 
@@ -399,14 +371,12 @@ function searchWinners() {
             let isWin = false;
             let currentRate = 0;
 
-            // ເຊັກຖືກເລກ 3 ຕົວຕົ້ນສະບັບກົງໆ
             if (item.number === winNum) {
                 isWin = true;
                 if (bill.room === "room1") currentRate = (item.type === "3 ຕົວ") ? 650 : 90;
                 else if (bill.room === "room2") currentRate = (item.type === "3 ຕົວ") ? 600 : 80;
                 else if (bill.room === "room3") currentRate = (item.type === "3 ຕົວ") ? 500 : 70;
             } 
-            // ເຊັກຖືກເລກ 2 ຕົວທ້າຍ (ຄົນຊື້ເລກ 2 ຕົວ ແລ້ວໄປກົງກັບ 2 ຕົວທ້າຍຂອງເລກລາງວັນ 3 ຕົວ)
             else if (winNum2Digits && item.number === winNum2Digits && item.type === "2 ຕົວ") {
                 isWin = true;
                 if (bill.room === "room1") currentRate = 90;
@@ -462,11 +432,12 @@ function copySingleBill(id) {
     let text = `🧾 ໃບບິນຫວຍສະຫຼຸບ | 👤 ລູກຄ້າ: ${bill.customer}\n📍 ຫ້ອງ: ${roomNames[bill.room]}\n-------------------------\n`;
     bill.items.forEach((item, i) => { text += `${i+1}. [${item.type}] ${item.number} = ${item.amount.toLocaleString()} ກີບ\n`; });
     text += `-------------------------\n💰 ຍອດລວມຊື້: ${bill.totalAmount.toLocaleString()} ກີບ\n✨ ເປີເຊັນຫັກໄດ້: -${bill.profit.toLocaleString()} ກີບ\n💵 ຍອດສຸດທິທີ່ຕ້ອງຈ່າຍ: ${(bill.totalAmount - bill.profit).toLocaleString()} ກີບ\n\n🙏 ຂອບໃຈຄຮັບ!`;
-    navigator.clipboard.writeText(text).then(() => { alert(`📋 ຄັດລອກໃບບິນຂອງ [${bill.customer}] ແລ້ວ!`); });
+    navigator.clipboard.writeText(text).then(() => { alert(`📋 คັດລອກໃບບິນຂອງ [${bill.customer}] ແລ້ວ!`); });
 }
 
+// ປ່ຽນແປງເລັກນ້ອຍ: ປ້ອງກັນ Error ຖ້າຫາກກົດຄັດລອກຕອນບໍ່ມີບິນ
 function copyToClipboard() {
-    if(bills.length === 0) { alert('ບໍ່ມີຂໍ້ມູນໃບບິນ'); return; }
+    if(!bills || bills.length === 0) { alert('ບໍ່ມີຂໍ້ມູນໃບບິນ'); return; }
     let textOutput = "📌 ຍອດສະຫຼຸບສົ່ງຫວຍ (Cloud Database ວາງໃນ WhatsApp)\n=========================\n";
     let grandTotalSales = 0, grandTotalNet = 0;
     bills.forEach((bill) => {
