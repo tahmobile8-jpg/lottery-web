@@ -14,8 +14,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="ລະບົບຫວຍ">
+    <link rel="manifest" href="manifest.json">
 </head>
 <body class="bg-gray-100 min-h-screen p-4 md:p-6">
+
+    <div id="offlineBanner" class="hidden fixed top-0 left-0 right-0 z-[60] bg-red-600 text-white text-center text-sm font-bold py-2 px-4 shadow-lg">
+        📡 ທ່ານກຳລັງໃຊ້ງານໃນໂໝດ Offline — ຂໍ້ມູນຈະຖືກ Sync ຄືນເມື່ອ Online
+    </div>
 
     <div id="loadingOverlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="text-center">
@@ -57,7 +62,7 @@
                 <input type="checkbox" id="authRememberMe" checked
                     class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                 <label for="authRememberMe" class="ml-2 text-sm text-gray-600 cursor-pointer select-none">
-                    🔐 จົດຈຳຂ້ອຍໄວ້ (Stay logged in)
+                    🔐 ຈົດຈຳຂ້ອຍໄວ້ (Stay logged in)
                 </label>
             </div>
             <button id="btnAuthSubmit"
@@ -148,8 +153,8 @@
                 </div>
                 <div class="grid grid-cols-3 gap-2">
                     <div class="col-span-2">
-                        <label class="block text-xs font-bold text-indigo-700">👤 ชື່ລູກຄ້າ:</label>
-                        <input type="text" id="batchCustomer" placeholder="ເອື້ອຍແດງ"
+                        <label class="block text-xs font-bold text-indigo-700">👤 ຊື່ລູກຄ້າ:</label>
+                        <input type="text" id="batchCustomer" placeholder="ເອື້ອຍແດງ" maxlength="50"
                             class="w-full mt-1 p-2 border rounded-md font-bold outline-none focus:ring-2 focus:ring-indigo-300">
                     </div>
                     <div>
@@ -170,7 +175,7 @@
                 <div class="flex gap-2">
                     <button id="btnSubmit"
                         class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-md transition shadow">
-                        ⚡ บันທຶກລົງ Cloud
+                        ⚡ ບັນທຶກລົງ Cloud
                     </button>
                     <button id="btnCancelEdit"
                         class="hidden bg-gray-400 hover:bg-gray-500 text-white font-bold p-3 rounded-md transition">
@@ -289,5 +294,14 @@
         </div>
 
     </div><script type="module" src="app.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('✅ SW registered:', reg.scope))
+                    .catch(err => console.warn('SW register failed:', err));
+            });
+        }
+    </script>
 </body>
 </html>

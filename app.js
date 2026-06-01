@@ -45,14 +45,22 @@ document.getElementById('btnCopyAll').addEventListener('click', copyToClipboard)
 document.getElementById('btnCopyWinners').addEventListener('click', copyWinnersToClipboard);
 document.getElementById('winningNumberInput').addEventListener('input', searchWinners);
 document.getElementById('billSearchInput').addEventListener('input', renderBillCards);
+document.getElementById('batchText').addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('btnSubmit').click();
+    }
+});
 document.getElementById('modalConfirmBtn').addEventListener('click', executeConfirmedAction);
 document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
 
 // ຜູກປຸ່ມກົດຕັດຍອດດ້ວຍຕົນເອງ
 document.getElementById('btnManualCutoff').addEventListener('click', () => {
-    if (confirm("ທ່ານຕ້ອງການກົດຕັດຍອດລວມຂອງມື້ນີ້ ແລະ ບັນທຶກລົງ 'ຫ້ອງສະຫຼຸບລວມລາຍວັນ' ດຽວນີ້ເລີຍແທ້ບໍ່?")) {
-        triggerAutoCutoff(true);
-    }
+    showModal(
+        '⚡ ກົດຕັດຍອດ (ມື້ນີ້)',
+        "ທ່ານຕ້ອງການກົດຕັດຍອດລວມຂອງມື້ນີ້ ແລະ ບັນທຶກລົງ 'ຫ້ອງສະຫຼຸບລວມລາຍວັນ' ດຽວນີ້ເລີຍແທ້ບໍ່?",
+        () => triggerAutoCutoff(true)
+    );
 });
 
 // ─── Auth ────────────────────────────────────────────────────────
@@ -68,6 +76,7 @@ onAuthStateChanged(auth, (user) => {
         currentUser = null;
         if (billsUnsubscribe) { billsUnsubscribe(); billsUnsubscribe = null; }
         if (dailyUnsubscribe) { dailyUnsubscribe(); dailyUnsubscribe = null; }
+        stopAutoCutoffTimer();
         bills = [];
         document.getElementById('appSection').classList.add('hidden');
         document.getElementById('authSection').classList.remove('hidden');
@@ -173,7 +182,7 @@ async function processBatchText() {
     btnSubmit.innerText = "⏳ ກຳລັງບັນທຶກ...";
 
     try {
-        let customerName = document.getElementById('batchCustomer').value.trim() || "ລູກຄ້າທົ່ວໄປ";
+        let customerName = document.getElementById('batchCustomer').value.trim().slice(0, 50) || "ລູກຄ້າທົ່ວໄປ";
         let commRate = parseFloat(document.getElementById('customerCommission').value);
         const selectedRoom = document.getElementById('batchRoom').value;
         const editingId = document.getElementById('editingBillId').value;
@@ -288,7 +297,7 @@ async function clearData() {
     if (!currentUser) return;
     showModal(
         '🚨 ລ້າງຂໍ້ມູນທັງໝົດ',
-        'ທ່ານແນ່ໃຈບໍ່? การລ້າງຂໍ້ມູນຈະລຶບທຸກໃບບິນໃນ Cloud ຖາວອນ ເພື່ອຂຶ້ນງວດໃໝ່',
+        'ທ່ານແນ່ໃຈບໍ່? ການລ້າງຂໍ້ມູນຈະລຶບທຸກໃບບິນໃນ Cloud ຖາວອນ ເພື່ອຂຶ້ນງວດໃໝ່',
         async () => {
             const batch = writeBatch(db);
             bills.forEach(b => { batch.delete(doc(db, "users", currentUser.uid, "bills", b.id)); });
@@ -336,7 +345,7 @@ function renderBillCards() {
         const minsLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
 
         let countdownText = `⏳ ລຶບອັດຕະໂນມັດ: ອີກ ${daysLeft} ມື້ ${hoursLeft} ຊົ່ວໂມງ`;
-        if (daysLeft === 0) countdownText = `⚠️ ຈະລຶບໃນ: ${hoursLeft} ຊົ່ວໂມງ ${minsLeft} นາທີ`;
+        if (daysLeft === 0) countdownText = `⚠️ ຈະລຶບໃນ: ${hoursLeft} ຊົ່ວໂມງ ${minsLeft} ນາທີ`;
 
         let netAmount = bill.totalAmount - bill.profit;
         const card = document.createElement('div');
@@ -570,26 +579,46 @@ function copyWinnersToClipboard() {
 // ─── 📅 ລະບົບຫ້ອງສະຫຼຸບລວມລາຍວັນ (Auto 8 PM & Manual Cutoff) ───
 
 // 1. ລະບົບກວດສອບເວລາຕັດຍອດອັດຕະໂນມັດ 8:00 PM
+let _autoCutoffIntervalId = null;
+
 function startAutoCutoffTimer() {
-    let hasTriggeredToday = false;
-    setInterval(() => {
+    // ລ້າງ timer ເກົ່າກ່ອນສ້າງໃໝ່ — ປ້ອງກັນ timer ຊ້ອນກັນເວລາ login ຫຼາຍຮອບ
+    if (_autoCutoffIntervalId) {
+        clearInterval(_autoCutoffIntervalId);
+        _autoCutoffIntervalId = null;
+    }
+    _autoCutoffIntervalId = setInterval(() => {
         const now = new Date();
+        const todayKey = `cutoff_${now.getFullYear()}_${now.getMonth()}_${now.getDate()}`;
         if (now.getHours() === 20 && now.getMinutes() === 0 && now.getSeconds() === 0) {
-            if (!hasTriggeredToday) {
+            // ກວດ localStorage ເພື່ອຮູ້ວ່າງວດນີ້ trigger ໄປຫຼືຍັງ (ກັນ reload ຊ້ຳ)
+            if (!localStorage.getItem(todayKey)) {
                 triggerAutoCutoff(false);
-                hasTriggeredToday = true;
+                localStorage.setItem(todayKey, '1');
             }
         }
+        // ລ້າງ flag ເກົ່າ (ເກີນ 2 ວັນ) ໃຫ້ localStorage ບໍ່ໃຫຍ່ຂຶ້ນ
         if (now.getHours() === 0 && now.getMinutes() === 0 && now.getSeconds() === 0) {
-            hasTriggeredToday = false;
+            for (let i = 2; i <= 7; i++) {
+                const d = new Date(now - i * 86400000);
+                const oldKey = `cutoff_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`;
+                localStorage.removeItem(oldKey);
+            }
         }
     }, 1000);
+}
+
+function stopAutoCutoffTimer() {
+    if (_autoCutoffIntervalId) {
+        clearInterval(_autoCutoffIntervalId);
+        _autoCutoffIntervalId = null;
+    }
 }
 
 // 2. ຟັງຊັນປະມວນຜົນຕັດຍອດ ແລະ ບັນທຶກລົງ Cloud Firestore
 async function triggerAutoCutoff(isManual = false) {
     if (!bills || bills.length === 0) {
-        if (isManual) alert("❌ ບໍ່ສາມາດຕັດຍອດໄດ້: ບໍ່ມີຂໍ້ມູນໃບບິນໃນລະບົບ.");
+        if (isManual) showToast('❌ ບໍ່ສາມາດຕັດຍອດໄດ້: ບໍ່ມີຂໍ້ມູນໃບບິນໃນລະບົບ', 'error');
         return;
     }
 
@@ -605,7 +634,7 @@ async function triggerAutoCutoff(isManual = false) {
     let totalNet = totalSales - totalProfit;
 
     if (totalSales === 0) {
-        if (isManual) alert("❌ ບໍ່ສາມາດຕັດຍອດໄດ້: ຍອດລວມທັງໝົດໃນປັດຈຸບັນຄື 0 ກີບ.");
+        if (isManual) showToast('❌ ບໍ່ສາມາດຕັດຍອດໄດ້: ຍອດລວມທັງໝົດໃນປັດຈຸບັນຄື 0 ກີບ', 'error');
         return;
     }
 
@@ -619,13 +648,13 @@ async function triggerAutoCutoff(isManual = false) {
         });
 
         if (isManual) {
-            alert(`✅ ຕັດຍອດສຳເລັດ!\n\nລະບົບໄດ້ບັນທຶກຍອດລວມຂອງງວດວັນທີ [${drawDate}] ລົງໃນຫ້ອງສະຫຼຸບລາຍວັນໃຫ້ທ່ານຮຽບຮ້ອຍແລ້ວ.`);
+            showToast(`✅ ຕັດຍອດງວດວັນທີ [${drawDate}] ສຳເລັດ!`);
         } else {
             console.log(`⏰ [Auto 8 PM] Saved summary for ${drawDate}`);
         }
     } catch (err) {
         console.error("Error saving summary: ", err);
-        if (isManual) alert("❌ ຕິດບັນຫາ: ບໍ່ສາມາດບັນທຶກຂໍ້ມູນລົງ Cloud ໄດ້.");
+        if (isManual) showToast('❌ ຕິດບັນຫາ: ບໍ່ສາມາດບັນທຶກຂໍ້ມູນລົງ Cloud ໄດ້', 'error');
     }
 }
 
@@ -673,15 +702,34 @@ function listenToDailySummary(uid) {
 // 4. ຟັງຊັນສຳລັບລຶບປະຫວັດຍອດລາຍວັນ
 async function deleteDailySummary(dateId) {
     if (!currentUser) return;
-    if (confirm(`ທ່ານຕ້ອງການລຶບຍອດສະຫຼຸບລາຍວັນຂອງວັນທີ [${dateId}] ແທ້ບໍ່?`)) {
-        try {
-            await deleteDoc(doc(db, "users", currentUser.uid, "daily_summaries", dateId));
-            showToast('🗑️ ລຶບປະຫວັດຍອດລາຍວັນແລ້ວ');
-        } catch (err) {
-            console.error("Error deleting summary: ", err);
+    showModal(
+        '🗑️ ລຶບຍອດລາຍວັນ',
+        `ທ່ານຕ້ອງການລຶບຍອດສະຫຼຸບລາຍວັນຂອງວັນທີ [${dateId}] ແທ້ບໍ່?`,
+        async () => {
+            try {
+                await deleteDoc(doc(db, "users", currentUser.uid, "daily_summaries", dateId));
+                showToast('🗑️ ລຶບປະຫວັດຍອດລາຍວັນແລ້ວ');
+            } catch (err) {
+                console.error("Error deleting summary: ", err);
+                showToast('❌ ລຶບຂໍ້ມູນບໍ່ສຳເລັດ', 'error');
+            }
         }
-    }
+    );
 }
 
 // Start Timer ຕັ້ງແຕ່ເປີດແອັບ
 startAutoCutoffTimer();
+
+// ─── Offline Status Indicator ───────────────────────────────────
+function updateOnlineStatus() {
+    const banner = document.getElementById('offlineBanner');
+    if (!banner) return;
+    if (navigator.onLine) {
+        banner.classList.add('hidden');
+    } else {
+        banner.classList.remove('hidden');
+    }
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
