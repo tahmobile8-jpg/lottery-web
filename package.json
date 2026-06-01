@@ -1,0 +1,24 @@
+{
+  "name": "lottery-web",
+  "version": "1.0.0",
+  "description": "ລະບົບຈັດການຍອດຫວຍສາຍສົ່ງ (Cloud Sync & PWA)",
+  "main": "app.js",
+  "scripts": {
+    "dev": "npx browser-sync start --server --files \"*.html, *.css, *.js\"",
+    "start": "npx browser-sync start --server --files \"*.html, *.css, *.js\"",
+    "deploy": "firebase deploy"
+  },
+  "keywords": [
+    "lottery",
+    "pwa",
+    "firebase",
+    "firestore"
+  ],
+  "author": "TahMobile",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "browser-sync": "^3.0.3",
+    "firebase-tools": "^13.31.1"
+  }
+}
