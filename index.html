@@ -4,182 +4,290 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ລະບົບຈັດການຍອດຫວຍ - Cloud Version</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Lao:wght=400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="ລະບົບຫວຍ">
 </head>
 <body class="bg-gray-100 min-h-screen p-4 md:p-6">
 
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="text-center">
+            <div class="inline-block w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+            <p class="text-indigo-700 font-bold">ກຳລັງໂຫຼດຂໍ້ມູນ...</p>
+        </div>
+    </div>
+
+    <div id="customModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4">
+            <h3 id="modalTitle" class="text-lg font-bold text-gray-800 mb-2"></h3>
+            <p id="modalMessage" class="text-sm text-gray-500 mb-6 leading-relaxed"></p>
+            <div class="flex gap-3">
+                <button id="modalCancelBtn" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl transition">ຍົກເລີກ</button>
+                <button id="modalConfirmBtn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2.5 rounded-xl transition">ຢືນຢັນ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastNotification" class="fixed bottom-5 right-5 z-50 px-4 py-3 rounded-xl shadow-lg font-medium text-sm opacity-0 translate-y-4 transition-all duration-300 pointer-events-none"></div>
+
     <div id="authSection" class="max-w-md mx-auto my-12 bg-white rounded-xl shadow-lg p-6 border border-gray-200">
         <div class="text-center mb-6">
-            <h2 id="authTitle" class="text-2xl font-bold text-indigo-600">🔐 ເຂົ້າສູ່ລະບົບຫວຍອອນລາຍ</h2>
-            <p id="authSubtitle" class="text-sm text-gray-400 mt-1">ກະລຸນາປ້ອນ ບັນຊີ ແລະ ລະຫັດຜ່ານ ເພື່ອຈັດການຂໍ້ມູນ</p>
+            <h2 class="text-2xl font-bold text-indigo-600">🔐 ເຂົ້າສູ່ລະບົບຫວຍອອນລາຍ</h2>
+            <p class="text-sm text-gray-400 mt-1">ກະລຸນາປ້ອນ ບັນຊີ ແລະ ລະຫັດຜ່ານ ເພື່ອຈັດການຂໍ້ມູນ</p>
         </div>
-        
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-bold text-gray-700">📧 ອີເມວ (Email):</label>
-                <input type="email" id="authEmail" placeholder="example@gmail.com" class="w-full mt-1 p-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-400">
+                <label class="block text-sm font-bold text-gray-700">📧 ອີເມວ:</label>
+                <input type="email" id="authEmail" placeholder="example@gmail.com"
+                    class="w-full mt-1 p-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-400">
             </div>
             <div>
-                <label class="block text-sm font-bold text-gray-700">🔑 ລະຫັດຜ່ານ (Password):</label>
-                <input type="password" id="authPassword" placeholder="******" class="w-full mt-1 p-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-400">
+                <label class="block text-sm font-bold text-gray-700">🔑 ລະຫັດຜ່ານ:</label>
+                <input type="password" id="authPassword" placeholder="******"
+                    class="w-full mt-1 p-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-400">
             </div>
-            <div class="flex items-center mb-4">
-    <input type="checkbox" id="authRememberMe" class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" checked>
-    <label for="authRememberMe" class="ml-2 text-sm text-gray-600 cursor-pointer select-none">
-        🔐 ຈົດຈຳຂ້ອຍໄວ້ໃນເຄື່ອງນີ້ (Stay logged in)
-    </label>
-</div>
-            <button id="btnAuthSubmit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-lg transition shadow">🚀 ເຂົ້າສູ່ລະບົບ</button>
-            <div class="text-center pt-2">
-    <p class="text-xs text-gray-400">🔒 ກະລຸນາຕິດຕໍ່ Admin ເພື່ອຂໍສິດເຂົ້າໃຊ້ງານ</p>
-</div>
+            <div class="flex items-center">
+                <input type="checkbox" id="authRememberMe" checked
+                    class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                <label for="authRememberMe" class="ml-2 text-sm text-gray-600 cursor-pointer select-none">
+                    🔐 จົດຈຳຂ້ອຍໄວ້ (Stay logged in)
+                </label>
+            </div>
+            <button id="btnAuthSubmit"
+                class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-lg transition shadow">
+                🚀 ເຂົ້າສູ່ລະບົບ
+            </button>
+            <p class="text-xs text-gray-400 text-center">🔒 ຕິດຕໍ່ Admin ເພື່ອຂໍສິດເຂົ້າໃຊ້ງານ</p>
         </div>
     </div>
 
     <div id="appSection" class="max-w-7xl mx-auto bg-white rounded-xl shadow-md p-4 md:p-6 space-y-6 hidden">
-        
+
         <div class="border-b pb-4 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="text-center sm:text-left">
-                <h1 class="text-2xl font-bold text-indigo-600">🧾 ລະບົບຫວຍສາຍສົ່ງ (Cloud Database)</h1>
-                <p id="userWelcomeLabel" class="text-gray-500 text-sm font-medium">ກຳລັງໂຫຼດຂໍ້ມູນ...</p>
+                <h1 class="text-2xl font-bold text-indigo-600">🧾 ລະບົບຫວຍສາຍສົ່ງ (Cloud)</h1>
+                <p id="userWelcomeLabel" class="text-gray-500 text-sm font-medium">ກຳລັງໂຫຼດ...</p>
             </div>
             <div class="flex items-center gap-2">
-                <span id="editModeBadge" class="hidden bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">⚙️ ໂໝດແກ້ໄຂບິນ</span>
-                <button id="btnLogout" class="bg-red-500 hover:bg-red-600 text-white font-bold px-4 py-2 rounded-lg text-xs shadow transition">🚪 ອອກຈາກລະບົບ</button>
+                <span id="editModeBadge" class="hidden bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse">⚙️ ໂໝດແກ້ໄຂ</span>
+                <button id="btnLogout" class="bg-red-500 hover:bg-red-600 text-white font-bold px-4 py-2 rounded-lg text-xs shadow transition">🚪 ອອກ</button>
             </div>
         </div>
 
         <div class="space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-gradient-to-r from-indigo-700 to-indigo-900 p-5 rounded-xl text-white shadow-md">
                 <div class="text-center sm:text-left">
-                    <span class="text-xs font-bold block text-indigo-200">💰 ຍອດຂາຍລວມທັງໝົດ</span>
+                    <span class="text-xs font-bold block text-indigo-200">💰 ຍອດຂາຍລວມ</span>
                     <span id="totalSalesAll" class="text-2xl font-bold">0 ກີບ</span>
                 </div>
                 <div class="text-center border-t sm:border-t-0 sm:border-l sm:border-r border-indigo-500 py-2 sm:py-0">
-                    <span class="text-xs font-bold block text-green-300">🎉 ກຳໄລລວມຂອງທ່ານ</span>
+                    <span class="text-xs font-bold block text-green-300">🎉 ກຳໄລລວມ</span>
                     <span id="totalProfitAll" class="text-2xl font-bold text-green-300">0 ກີບ</span>
                 </div>
                 <div class="text-center sm:text-right">
-                    <span class="text-xs font-bold block text-amber-300">💵 ຍອດລວມຕ້ອງໂອນສົ່ງເຈົ້າມື</span>
-                    <span id="totalNetAll" class="text-2xl font-bold text-amber-300">0 ກີບ</span>
+                    <span class="text-xs font-bold block text-rose-300">💵 ຍອດໂອນສົ່ງເຈົ້າມື</span>
+                    <span id="totalNetAll" class="text-2xl font-bold text-rose-400">0 ກີບ</span>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="bg-slate-50 border border-gray-200 rounded-xl p-4 shadow-sm">
-                    <h3 class="font-bold text-sm text-indigo-700 border-b pb-1 mb-2 flex justify-between"><span>🚪 ຫ້ອງທີ 1</span><span class="text-[11px] text-gray-400 font-normal">2ຕົວ=90, 3ຕົວ=650</span></h3>
+                    <h3 class="font-bold text-sm text-indigo-700 border-b pb-1 mb-2 flex justify-between">
+                        <span>🚪 ຫ້ອງທີ 1</span><span class="text-[11px] text-gray-400 font-normal">2ຕົວ=90, 3ຕົວ=650</span>
+                    </h3>
                     <div class="space-y-1 text-xs">
                         <div class="flex justify-between"><span class="text-gray-500">ຍອດຂາຍ:</span><span id="room1Sales" class="font-bold text-gray-800">0 ກີບ</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500">ເປີເຊັນກຳໄລ:</span><span id="room1Profit" class="font-bold text-green-600">0 ກີບ</span></div>
-                        <div class="flex justify-between border-t pt-1 mt-1 font-bold"><span class="text-gray-600">ຍອດໂອນສົ່ງ:</span><span id="room1Net" class="text-amber-600">0 ກີບ</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">ກຳໄລ:</span><span id="room1Profit" class="font-bold text-green-600">0 ກີບ</span></div>
+                        <div class="flex justify-between border-t pt-1 mt-1 font-bold"><span class="text-gray-600">ຍອດທີ່ຕ້ອງສົ່ງ:</span><span id="room1Net" class="text-red-600">0 ກີບ</span></div>
                     </div>
                 </div>
                 <div class="bg-slate-50 border border-gray-200 rounded-xl p-4 shadow-sm">
-                    <h3 class="font-bold text-sm text-indigo-700 border-b pb-1 mb-2 flex justify-between"><span>🚪 ຫ້ອງທີ 2</span><span class="text-[11px] text-gray-400 font-normal">2ຕົວ=80, 3ຕົວ=600</span></h3>
+                    <h3 class="font-bold text-sm text-indigo-700 border-b pb-1 mb-2 flex justify-between">
+                        <span>🚪 ຫ້ອງທີ 2</span><span class="text-[11px] text-gray-400 font-normal">2ຕົວ=80, 3ຕົວ=600</span>
+                    </h3>
                     <div class="space-y-1 text-xs">
                         <div class="flex justify-between"><span class="text-gray-500">ຍອດຂາຍ:</span><span id="room2Sales" class="font-bold text-gray-800">0 ກີບ</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500">ເປີເຊັນກຳໄລ:</span><span id="room2Profit" class="font-bold text-green-600">0 ກີບ</span></div>
-                        <div class="flex justify-between border-t pt-1 mt-1 font-bold"><span class="text-gray-600">ຍອດໂອນສົ່ງ:</span><span id="room2Net" class="text-amber-600">0 ກີບ</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">ກຳໄລ:</span><span id="room2Profit" class="font-bold text-green-600">0 ກີບ</span></div>
+                        <div class="flex justify-between border-t pt-1 mt-1 font-bold"><span class="text-gray-600">ຍອດທີ່ຕ້ອງສົ່ງ:</span><span id="room2Net" class="text-red-600">0 ກີບ</span></div>
                     </div>
                 </div>
                 <div class="bg-slate-50 border border-gray-200 rounded-xl p-4 shadow-sm">
-                    <h3 class="font-bold text-sm text-indigo-700 border-b pb-1 mb-2 flex justify-between"><span>🚪 ຫ້ອງທີ 3</span><span class="text-[11px] text-gray-400 font-normal">2ຕົວ=70, 3ຕົວ=500</span></h3>
+                    <h3 class="font-bold text-sm text-indigo-700 border-b pb-1 mb-2 flex justify-between">
+                        <span>🚪 ຫ້ອງທີ 3</span><span class="text-[11px] text-gray-400 font-normal">2ຕົວ=70, 3ຕົວ=500</span>
+                    </h3>
                     <div class="space-y-1 text-xs">
                         <div class="flex justify-between"><span class="text-gray-500">ຍອດຂາຍ:</span><span id="room3Sales" class="font-bold text-gray-800">0 ກີບ</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500">ເປີເຊັນກຳໄລ:</span><span id="room3Profit" class="font-bold text-green-600">0 ກີບ</span></div>
-                        <div class="flex justify-between border-t pt-1 mt-1 font-bold"><span class="text-gray-600">ຍອດໂອນສົ່ງ:</span><span id="room3Net" class="text-amber-600">0 ກີບ</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500">ກຳໄລ:</span><span id="room3Profit" class="font-bold text-green-600">0 ກີບ</span></div>
+                        <div class="flex justify-between border-t pt-1 mt-1 font-bold"><span class="text-gray-600">ຍອດທີ່ຕ້ອງສົ່ງ:</span><span id="room3Net" class="text-red-600">0 ກີບ</span></div>
                     </div>
                 </div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
             <div class="bg-gray-50 p-4 rounded-lg border border-indigo-100 space-y-4 shadow-sm h-fit">
-                <div class="border-b pb-2"><h2 id="formTitle" class="text-lg font-bold text-gray-700">📝 ຄີຂໍ້ມູນຫວຍ</h2></div>
+                <div class="border-b pb-2">
+                    <h2 id="formTitle" class="text-lg font-bold text-gray-700">📝 ຄີຂໍ້ມູນຫວຍ</h2>
+                </div>
                 <input type="hidden" id="editingBillId" value="">
                 <div>
-                    <label class="block text-sm font-bold text-gray-700">📍 ເລືອກຫ້ອງຂາຍ:</label>
+                    <label class="block text-sm font-bold text-gray-700">📍 ເލືອກຫ້ອງ:</label>
                     <select id="batchRoom" class="w-full mt-1 p-2 border rounded-md bg-white font-medium text-gray-800 outline-none">
-                        <option value="room1">🚪 ຫ້ອງທີ 1 90/650</option><option value="room2">🚪 ຫ້ອງທີ 2 80/600</option><option value="room3">🚪 ຫ້ອງທີ 3 70/500</option>
+                        <option value="room1">🚪 ຫ້ອງ 1 (90/650)</option>
+                        <option value="room2">🚪 ຫ້ອງ 2 (80/600)</option>
+                        <option value="room3">🚪 ຫ້ອງ 3 (70/500)</option>
                     </select>
                 </div>
                 <div class="grid grid-cols-3 gap-2">
                     <div class="col-span-2">
-                        <label class="block text-xs font-bold text-indigo-700">👤 ຊື່ລູກຄ້າ:</label>
-                        <input type="text" id="batchCustomer" placeholder="ເອື້ອຍແດງ" class="w-full mt-1 p-2 border rounded-md font-bold outline-none">
+                        <label class="block text-xs font-bold text-indigo-700">👤 ชື່ລູກຄ້າ:</label>
+                        <input type="text" id="batchCustomer" placeholder="ເອື້ອຍແດງ"
+                            class="w-full mt-1 p-2 border rounded-md font-bold outline-none focus:ring-2 focus:ring-indigo-300">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-pink-700">ເປີເຊັນ (%) :</label>
-                        <input type="number" id="customerCommission" value="20" class="w-full mt-1 p-2 border border-pink-300 rounded-md text-center font-bold text-pink-700 bg-pink-50">
+                        <label class="block text-xs font-bold text-pink-700">% ເປີ:</label>
+                        <input type="number" id="customerCommission" value="20" min="0" max="100"
+                            class="w-full mt-1 p-2 border border-pink-300 rounded-md text-center font-bold text-pink-700 bg-pink-50 focus:ring-2 focus:ring-pink-300 outline-none">
                     </div>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-600">📝 ວາງຂໍ້ຄວາມຍອດຫວຍ:</label>
-                    <textarea id="batchText" rows="5" placeholder="ຕົວຢ່າງ: 04-44-84:20" class="w-full mt-1 p-2 border rounded-md font-mono text-sm"></textarea>
+                    <textarea id="batchText" rows="5" placeholder="ຕົວຢ່າງ: 04-44-84:20"
+                        class="w-full mt-1 p-2 border rounded-md font-mono text-sm focus:ring-2 focus:ring-indigo-300 outline-none"></textarea>
                 </div>
                 <div id="validationLogContainer" class="hidden mt-3 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs">
-    <div class="font-bold flex items-center gap-1 mb-1">
-        ⚠️ ພົບຂໍ້ຄວາມທີ່ແຍກບໍ່ໄດ້ (ລະບົບບໍ່ໄດ້ບັນທຶກ):
-    </div>
-    <ul id="validationLogList" class="list-disc list-inside space-y-1 font-mono">
-        </ul>
-</div>
+                    <div class="font-bold flex items-center gap-1 mb-1">⚠️ ພົບຂໍ້ຄວາມທີ່ແຍກບໍ່ໄດ້:</div>
+                    <ul id="validationLogList" class="list-disc list-inside space-y-1 font-mono"></ul>
+                </div>
                 <div class="flex gap-2">
-                    <button id="btnSubmit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-md transition shadow">⚡ ບັນທຶກລົງ Cloud Database</button>
-                    <button id="btnCancelEdit" class="hidden bg-gray-400 hover:bg-gray-500 text-white font-bold p-3 rounded-md transition">ຍົກເລີກ</button>
+                    <button id="btnSubmit"
+                        class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-3 rounded-md transition shadow">
+                        ⚡ บันທຶກລົງ Cloud
+                    </button>
+                    <button id="btnCancelEdit"
+                        class="hidden bg-gray-400 hover:bg-gray-500 text-white font-bold p-3 rounded-md transition">
+                        ຍົກເລີກ
+                    </button>
                 </div>
             </div>
 
             <div class="lg:col-span-2 bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm space-y-4 flex flex-col justify-between">
                 <div>
                     <div class="border-b border-amber-200 pb-2 flex flex-col sm:flex-row justify-between items-center gap-2">
-                        <h2 class="text-lg font-bold text-amber-800">🎉 ປ່ອງຄົ້ນຫາຄົນຖືກເລກ</h2>
-                        <button id="btnCopyWinners" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-2 rounded transition shadow">🎁 ຄັດລອກລາຍຊື່ຄົນຖືກເລກ</button>
+                        <h2 class="text-lg font-bold text-amber-800">🎉 ຄົ້ນຫາຄົນຖືກເລກ</h2>
+                        <button id="btnCopyWinners"
+                            class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-2 rounded transition shadow">
+                            🎁 ກັອບປີ້ລາຍຊື່ຄົນຖືກ
+                        </button>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end mt-3">
                         <div>
                             <label class="block text-xs font-bold text-amber-700 mb-1">🔍 ກອກເລກລາງວັນ:</label>
-                            <input type="number" id="winningNumberInput" placeholder="10" class="w-full p-2 border border-amber-300 rounded-lg font-bold text-lg text-amber-900 bg-white">
+                            <input type="text" inputmode="numeric" id="winningNumberInput" placeholder="ເຊັ່ນ: 07 ຫຼື 123"
+                                class="w-full p-2 border border-amber-300 rounded-lg font-bold text-lg text-amber-900 bg-white focus:ring-2 focus:ring-amber-400 outline-none">
                         </div>
-                        <div class="bg-white border border-amber-200 p-2 rounded-lg text-center shadow-sm"><span class="text-[11px] text-gray-500 block">ຈຳນວນຄົນຖືກ</span><span id="winnerCountLabel" class="text-lg font-bold text-amber-700">0 ລາຍການ</span></div>
-                        <div class="bg-white border border-amber-200 p-2 rounded-lg text-center shadow-sm"><span class="text-[11px] text-gray-500 block">ລວມເງິນລາງວັນ</span><span id="winnerTotalPayoutLabel" class="text-lg font-bold text-red-600">0 ກີບ</span></div>
+                        <div class="bg-white border border-amber-200 p-2 rounded-lg text-center shadow-sm">
+                            <span class="text-[11px] text-gray-500 block">ຈຳນວນຄົນຖືກ</span>
+                            <span id="winnerCountLabel" class="text-lg font-bold text-amber-700">0 ລາຍການ</span>
+                        </div>
+                        <div class="bg-white border border-amber-200 p-2 rounded-lg text-center shadow-sm">
+                            <span class="text-[11px] text-gray-500 block">ລວມເງິນລາງວັນ</span>
+                            <span id="winnerTotalPayoutLabel" class="text-lg font-bold text-red-600">0 ກີບ</span>
+                        </div>
                     </div>
                     <div class="bg-white border border-amber-200 rounded-lg overflow-hidden shadow-sm mt-3">
                         <div class="overflow-y-auto max-h-[140px]">
                             <table class="w-full text-left border-collapse">
                                 <thead class="bg-amber-100 text-amber-800 text-xs font-bold border-b sticky top-0 z-10">
-                                    <tr><th class="p-2">ຊື່ລູກຄ້າ</th><th class="p-2">ເລກຊື້</th><th class="p-2">ປະເພດ</th><th class="p-2">ຫ້ອງ</th><th class="p-2 text-red-600">ເງິນລາງວັນ</th></tr>
+                                    <tr>
+                                        <th class="p-2">ຊື່</th>
+                                        <th class="p-2">ເລກ</th>
+                                        <th class="p-2">ປະເພດ</th>
+                                        <th class="p-2">ຫ້ອງ</th>
+                                        <th class="p-2 text-red-600">ລາງວັນ</th>
+                                    </tr>
                                 </thead>
                                 <tbody id="winnerTableBody" class="text-xs text-gray-600 divide-y divide-amber-100">
-                                    <tr><td colspan="5" class="p-4 text-center text-gray-400 bg-amber-50/50">ກະລຸນາກອກເລກລາງວັນເພື່ອຄົ້ນຫາ</td></tr>
+                                    <tr>
+                                        <td colspan="5" class="p-4 text-center text-gray-400 bg-amber-50/50">ກະລຸນາກອກເລກລາງວັນ</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
                 <div class="p-3 bg-white rounded-lg border flex flex-col sm:flex-row justify-between items-center gap-2 shadow-sm border-indigo-100">
-                    <div><h3 class="font-bold text-xs text-gray-700">📤 ສົ່ງຍອດທັງໝົດຕໍ່ໃຫ້ເຈົ້າມືໃຫຍ່</h3><p class="text-[11px] text-gray-400">ສະຫຼຸບບິນຄິດໄລ່ເປີເຊັນລວມທຸກຄົນໄປວາງໃນ WhatsApp</p></div>
-                    <button id="btnCopyAll" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2 rounded text-xs shadow">📋 ຄັດລອກຂໍ້ຄວາມສົ່ງຍອດທັງໝົດ</button>
+                    <div>
+                        <h3 class="font-bold text-xs text-gray-700">📤 ສົ່ງຍອດທັງໝົດ</h3>
+                        <p class="text-[11px] text-gray-400">ສະຫຼຸບທຸກຄົນ ສຳລັບວາງໃນ WhatsApp</p>
+                    </div>
+                    <button id="btnCopyAll"
+                        class="w-full sm:w-auto bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2 rounded text-xs shadow">
+                        📋 ກັອບປີ້ຍອດສະຫຼຸບທັງໝົດ
+                    </button>
                 </div>
             </div>
         </div>
 
         <div class="bg-gray-900 rounded-xl overflow-hidden shadow-md border border-gray-800">
             <div class="bg-gray-800 text-white px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-2 border-b border-gray-700">
-                <div>
-                    <span id="ticketCount" class="font-bold text-lg text-indigo-400 block">🧾 ໃບບິນຫວຍງວດນີ້ (Cloud Syncing...)</span>
-                    <p class="text-xs text-gray-400">ຂໍ້ມູນອັບເດດ Real-time ຂ້າມເຄື່ອງຜ່ານລະບົບອອນລາຍ</p>
+                <div class="w-full sm:w-auto">
+                    <span id="ticketCount" class="font-bold text-lg text-indigo-400 block">🧾 ໃບບິນຫວຍ (Cloud Syncing...)</span>
+                    <p class="text-xs text-gray-400">ອັບເດດ Real-time ຂ້າມເຄື່ອງ</p>
                 </div>
-                <button id="btnClearData" class="text-xs bg-red-500 hover:bg-red-600 px-3 py-2 rounded-lg font-bold text-white shadow transition">🧹 ລ້າງຂໍ້ມູນຂຶ້ນງວດໃໝ່</button>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <input type="text" id="billSearchInput" placeholder="🔍 ຊອກຫາລູກຄ້າ..."
+                        class="flex-1 sm:w-48 px-3 py-2 rounded-lg text-sm text-gray-800 bg-white border-0 outline-none focus:ring-2 focus:ring-indigo-400">
+                    <button id="btnClearData"
+                        class="text-xs bg-red-500 hover:bg-red-600 px-3 py-2 rounded-lg font-bold text-white shadow transition whitespace-nowrap">
+                        🧹 ຂຶ້ນງວດໃໝ່
+                    </button>
+                </div>
             </div>
-            <div id="billCardsContainer" class="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto max-h-[600px] bg-slate-950">
-                </div>
+            <div id="billCardsContainer"
+                class="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto max-h-[600px] bg-slate-950">
+            </div>
         </div>
 
-    </div>
+        <div class="bg-white rounded-xl shadow-lg p-6 border border-gray-200 mt-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-3 mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">📅 ຫ້ອງສະຫຼຸບລວມລາຍວັນ (ແຍກເປັນມື້)</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">ລະບົບຈະຕັດຍອດອັດຕະໂນມັດຫຼັງ 8 PM ຫຼື ທ່ານສາມາດກົດຕັດຍອດເອງກ່ອນໄດ້</p>
+                </div>
+                <button id="btnManualCutoff" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs shadow transition flex items-center justify-center gap-1">
+                    ⚡ ກົດຕັດຍອດ (ມື້ນີ້) ເອງ
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-700 text-xs uppercase font-bold border-b">
+                            <th class="p-3">ວັນທີ (ງວດ)</th>
+                            <th class="p-3 text-right">ຍອດຂາຍຮວມ</th>
+                            <th class="p-3 text-right text-green-600">ລາຍຮັບເປີເຊັນຮວມ</th>
+                            <th class="p-3 text-right text-red-600">ຍອດສົ່ງສຸດທິ</th>
+                            <th class="p-3 text-center">ຈັດການ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dailySummaryTableBody">
+                        <tr>
+                            <td colspan="5" class="p-4 text-center text-gray-400">⏳ ກຳລັງໂຫຼດຂໍ້ມູນຍອດລາຍວັນ...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-    <script type="module" src="app.js"></script>
+    </div><script type="module" src="app.js"></script>
 </body>
 </html>
