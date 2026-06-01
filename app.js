@@ -131,8 +131,9 @@ function closeModal() {
 }
 
 function executeConfirmedAction() {
+    const action = _pendingAction;
     closeModal();
-    if (_pendingAction) _pendingAction();
+    if (action) action();
 }
 
 // ─── Toast Notification ─────────────────────────────────────────
