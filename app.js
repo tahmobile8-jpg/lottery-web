@@ -202,13 +202,13 @@ async function processBatchText() {
         lines.forEach(line => {
             let trimmedLine = line.trim();
             if (trimmedLine.length === 0) return;
-            const splitRegex = /([0-9\s\x2a\-\,\;\.\+]+)([\=\:\;]|\bhu\b|\bHu\b|ຫູ|ฮู|ฮุู|ປ່ອງລະ|ປ່ອງ|ຕາລະ|ຕາ)\s*(\d+)/i;
+            const splitRegex = /([0-9\s\*\-\,\;\.\+\/\\]+)([\=\:\;\\\/]|\bhu\b|\bHu\b|ຫູ|ຮູ|ฮู|ฮุู|ປ່ອງລະ|ປ່ອງ|ຕາລະ|ຕາ)\s*(\d+)/i;
             const match = trimmedLine.match(splitRegex);
             if (match) {
                 const rawNumbersPart = match[1].trim();
                 let moneyAmount = parseFloat(match[3]);
                 if (moneyAmount < 5000) moneyAmount = moneyAmount * 1000;
-                const lotteryList = rawNumbersPart.split(/[\s\x2a\-\,\;\.\+]+/);
+                const lotteryList = rawNumbersPart.split(/[\s\*\-\,\;\.\+\/\\]+/);
                 lotteryList.forEach(lotteryNum => {
                     let trimmedNum = lotteryNum.trim();
                     if (trimmedNum.length > 0 && !isNaN(trimmedNum)) {
